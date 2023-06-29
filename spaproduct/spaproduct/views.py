@@ -140,4 +140,4 @@ def send_product_email(product):
         </tr>
     </table>
     '''.format(product.codigo_interno, product.ean, product.descripcion, product.brandobj.brand)
-    send_mail('Nuevo producto creado', '', 'viictori19.vc@gmail.com', ['viictori19.vc@gmail.com'], html_message=email_message)
+    send_mail('Nuevo producto creado', '', 'viictori19.vc@gmail.com', ['pjmakey2@gmail.com'], html_message=email_message)
