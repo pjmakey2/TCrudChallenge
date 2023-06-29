@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.1.4/dist/sweetalert2.all.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #333;
+            color: #fff;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .form-control {
+            background-color: #222;
+            color: #fff;
+        }
+        .btn {
+            background-color: #dc3545;
+            color: #fff;
+        }
+        .btn:hover {
+            background-color: #c82333;
+        }
+        table {
+            background-color: #222;
+        }
+        table th,
+        table td {
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Listado de Productos</h1>
+
+    <!-- Formulario de Crear Producto -->
+    <form id="productForm" method="POST" action="{% url 'product_create' %}">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="codigo_interno">Código Interno:</label>
+        <input type="number" class="form-control" id="codigo_interno" name="codigo_interno" required>
+        <div class="invalid-feedback"></div>
+      </div>
+      <div class="form-group">
+        <label for="number">EAN:</label>
+        <input type="text" class="form-control" id="ean" name="ean" required>
+        <div class="invalid-feedback"></div>
+      </div>
+      <div class="form-group">
+        <label for="descripcion">Descripción:</label>
+        <input type="text" class="form-control" id="descripcion" name="descripcion" required>
+        <div class="invalid-feedback"></div>
+      </div>
+      <div class="form-group">
+        <label for="brand">Marca:</label>
+        <select class="form-control" id="brand" name="brand" required>
+          {% for brand in brands %}
+          <option value="{{ brand.id }}">{{ brand.brand }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn">Crear Producto</button>
+      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addBrandModal">
+        Agregar Marca
+      </button>
+    </form>
+  </div>
+      
+      
+      <!-- Listado de Productos -->
+      <div>
+        <table class="table mt-4">
+          <thead>
+              <tr>
+                  <th>Código Interno</th>
+                  <th>EAN</th>
+                  <th>Descripción</th>
+                  <th>Marca</th>
+                  <th>Acciones</th>
+              </tr>
+          </thead>
+          <tbody>
+              {% for product in products %}
+              <tr>
+                  <td>{{ product.codigo_interno }}</td>
+                  <td>{{ product.ean }}</td>
+                  <td>{{ product.descripcion }}</td>
+                  <td>{{ product.brandobj.brand }}</td>
+                  <td>
+                    <a href="{% url 'product_update' pk=product.id %}" class="btn btn-info"
+                    data-codigo-interno="{{ product.codigo_interno }}"
+                    data-ean="{{ product.ean }}"
+                    data-descripcion="{{ product.descripcion }}"
+                    data-marca="{{ product.brandobj.id }}">Update</a>
+                      <a href="#" class="btn btn-info" onclick="showConfirmationDialog('{{ product.descripcion }}','{{ product.id }}', '{% url 'product_delete' pk=product.id %}')">Delete</a>
+                      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addPriceModal" data-product-id="{{ product.id }}">Add Price</button>
+                      <button class="btn btn-info" onclick="showPrices('{{ product.id }}')">Ver detalles</button>
+                    </td>
+                </tr>
+                <tr id="prices-row-{{ product.id }}" style="display: none;">
+                    <td colspan="5">
+                        <h6>Precios:</h6>
+                        <ul>
+                            {% for precio in product.precios_set.all %}
+                                <li>Precio: {{ precio.precio }} (Vigencia: {{ precio.vigencia }})</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+<!-- Modal de Actualización -->
+<div class="modal fade" id="updateFormModal" tabindex="-1" role="dialog" aria-labelledby="updateFormModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h5 class="modal-title" style="color: black;" id="updateFormModalLabel">Actualizar Producto</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+              </button>
+          </div>
+          <div class="modal-body">
+            <form method="POST" id="updateForm" action="">
+              {% csrf_token %}
+                  <div class="form-group">
+                      <label for="codigo_interno_update" style="color: black;">Código Interno:</label>
+                      <input type="text" class="form-control" id="codigo_interno_update" name="codigo_interno" required>
+                  </div>
+                  <div class="form-group">
+                      <label for="ean_update" style="color: black;">EAN:</label>
+                      <input type="text" class="form-control" id="ean_update" name="ean" required>
+                  </div>
+                  <div class="form-group">
+                      <label for="descripcion_update" style="color: black;">Descripción:</label>
+                      <input type="text" class="form-control" id="descripcion_update" name="descripcion" required>
+                  </div>
+                  <div class="form-group">
+                      <label for="brand_update" style="color: black;">Marca:</label>
+                      <select class="form-control" id="brand_update" name="brand" required>
+                          {% for brand in brands %}
+                          <option value="{{ brand.id }}">{{ brand.brand }}</option>
+                          {% endfor %}
+                      </select>
+                  </div>
+                  <button type="submit" class="btn btn-primary">Actualizar Producto</button>
+              </form>
+          </div>
+      </div>
+  </div>
+</div>
+
+<!-- Modal de Agregar Marca -->
+<div class="modal fade" id="addBrandModal" tabindex="-1" role="dialog" aria-labelledby="addBrandModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addBrandModalLabel" style="color: black;">Agregar Marca</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="addBrandForm" data-url="{% url 'brand_create' %}">
+          <div class="form-group">
+            <label for="newBrand" style="color: black;">Marca:</label>
+            <input type="text" class="form-control" id="newBrand" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Agregar Precio -->
+<div class="modal fade" id="addPriceModal" tabindex="-1" role="dialog" aria-labelledby="addPriceModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addPriceModalLabel" style="color: black;">Agregar Precio para el Producto: {{ product.descripcion }}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="{% url 'add_price' pk=product.id %}" id="addPriceForm">
+          {% csrf_token %}
+          <label for="precio" style="color: black;">Precio:</label>
+          <input type="number" class="form-control" id="precio" name="precio" required><br>
+          <label for="vigencia" style="color: black;">Vigencia:</label>
+          <input type="date" class="form-control" id="vigencia" name="vigencia" required><br>
+          <input type="hidden" id="product_id" name="product_id" value="{{ product.id }}">
+          <button type="submit" class="btn btn-primary">Agregar Precio</button>
+        </form>
+      </div>      
+    </div>      
+  </div>
+</div> 
+
+          <script>
+            function showPrices(productId) {
+                var pricesRow = document.getElementById('prices-row-' + productId);
+                if (pricesRow.style.display === 'none') {
+                    pricesRow.style.display = 'table-row';
+                } else {
+                    pricesRow.style.display = 'none';
+                }
+            }
+          </script>
+
+<script>
+    function showConfirmationDialog(productDescription,productId, deleteUrl) {
+  Swal.fire({
+    title: "Eliminar producto",
+    text: `¿Estás seguro de que deseas eliminar el producto "${productDescription}"?`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#dc3545",
+    cancelButtonColor: "#6c757d",
+    confirmButtonText: "Eliminar",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      deleteProduct(productId, deleteUrl);
+    }
+  });
+}
+  
+    function deleteProduct(productId, deleteUrl) {
+      $.ajax({
+        url: deleteUrl,
+        type: "POST",
+        data: {
+          csrfmiddlewaretoken: "{{ csrf_token }}",
+        },
+        success: function () {
+            Swal.fire("Producto eliminado correctamente", "", "success").then(() => {
+            location.reload(); // Recargar la página después de la eliminación
+          });
+        },
+        error: function () {
+          swal("Error al eliminar el producto", "", "error");
+        },
+      });
+    }
+  </script>
+  
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  
+<script>
+  $(document).ready(function() {
+    $('a[data-codigo-interno][data-ean][data-descripcion][data-marca]').click(function(event) {
+      event.preventDefault();
+      var codigoInterno = $(this).data('codigo-interno');
+      var ean = $(this).data('ean');
+      var descripcion = $(this).data('descripcion');
+      var marca = $(this).data('marca');
+
+      // Prellenar los datos en los inputs del formulario de actualización
+      $('#codigo_interno_update').val(codigoInterno);
+      $('#ean_update').val(ean);
+      $('#descripcion_update').val(descripcion);
+      $('#brand_update').val(marca);
+
+      // Establecer la URL de acción del formulario
+      var productUpdateUrl = $(this).attr('href');
+      $('#updateForm').attr('action', productUpdateUrl);
+
+      // Mostrar el formulario de actualización
+      $('#updateFormModal').modal('show');
+    });
+  });
+</script>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+  $(document).ready(function() {
+    // Capturar el evento de envío del formulario
+    $('#addBrandForm').submit(function(event) {
+      event.preventDefault(); // Evitar la recarga de la página
+
+      // Obtener el valor del campo de entrada
+      var newBrand = $('#newBrand').val();
+
+      // Obtener la URL de la vista brand_create
+      var url = $('#addBrandForm').data('url');
+
+      // Realizar la solicitud AJAX para crear la nueva marca
+      $.ajax({
+        url: url,
+        type: 'POST',
+        data: {
+          csrfmiddlewaretoken: '{{ csrf_token }}',
+          brand: newBrand
+        },
+        success: function(response) {
+          // Mostrar un mensaje de éxito
+          Swal.fire({
+            icon: 'success',
+            title: 'Marca agregada',
+            text: 'La marca se ha creado correctamente.',
+          }).then(() => {
+            // Recargar la página para mostrar la nueva marca en la lista
+            location.reload();
+          });
+        },
+        error: function() {
+          // Mostrar un mensaje de error
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Ocurrió un error al crear la marca.',
+          });
+        }
+      });
+
+      // Cerrar la ventana emergente
+      $('#addBrandModal').modal('hide');
+    });
+  });
+</script>
+
+<!-- ...código HTML anterior...-->
+
+<script>
+  $(document).ready(function() {
+    // Capturar el evento de envío del formulario de agregar precio
+    $('#addPriceForm').submit(function(event) {
+      event.preventDefault(); // Evitar la recarga de la página
+
+      // Obtener los valores de los campos de entrada
+      var precio = $('#precio').val();
+      var vigencia = $('#vigencia').val();
+      var productId = $('#product_id').val();
+      console.log("product_id :"+productId);
+      // Obtener la URL de la vista add_price
+      var url = $(this).attr('action');
+
+      // Realizar la solicitud AJAX para guardar el precio
+      $.ajax({
+        url: url,
+        type: 'POST',
+        data: {
+          csrfmiddlewaretoken: '{{ csrf_token }}',
+          precio: precio,
+          vigencia: vigencia,
+          product_id: productId
+        },
+        success: function(response) {
+          // Mostrar un mensaje de éxito
+          Swal.fire({
+            icon: 'success',
+            title: 'Precio agregado',
+            text: 'El precio se ha guardado correctamente.',
+          }).then(() => {
+            // Recargar la página para mostrar el nuevo precio en la lista
+            location.reload();
+          });
+        },
+        error: function() {
+          // Mostrar un mensaje de error
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Ocurrió un error al guardar el precio.',
+          });
+        }
+      });
+
+      // Cerrar la ventana emergente
+      $('#addPriceModal').modal('hide');
+    });
+  });
+</script>
+
+<script>
+  const productForm = document.getElementById('productForm');
+  const codigoInternoInput = document.getElementById('codigo_interno');
+  const eanInput = document.getElementById('ean');
+  const descripcionInput = document.getElementById('descripcion');
+
+  productForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+    if (validateForm()) {
+      this.submit();
+    }
+  });
+
+  function validateForm() {
+    let isValid = true;
+    const errors = {};
+
+    // Validar Código Interno único y entero
+    if (!isCodigoInternoValid()) {
+      errors.codigo_interno = 'El Código Interno debe ser un número entero y único.';
+      isValid = false;
+    }
+
+    // Validar EAN único
+    if (!isEanValid()) {
+      errors.ean = 'El EAN debe ser único.';
+      isValid = false;
+    }
+
+    // Validar Descripción única
+    if (!isDescripcionValid()) {
+      errors.descripcion = 'La Descripción debe ser única.';
+      isValid = false;
+    }
+
+    // Validar longitud de Descripción
+    if (!isDescripcionLengthValid()) {
+      errors.descripcion = 'La Descripción no puede superar los 90 caracteres.';
+      isValid = false;
+    }
+
+    // Mostrar mensajes de error
+    showErrors(errors);
+
+    return isValid;
+  }
+
+  function isCodigoInternoValid() {
+  const codigoInterno = codigoInternoInput.value.trim();
+  const isNumeric = /^[0-9]+$/.test(codigoInterno);
+  return isNumeric && isUniqueField('codigo_interno', codigoInterno);
+  } 
+
+  function isEanValid() {
+    const ean = eanInput.value;
+    return isUniqueField('ean', ean);
+  }
+
+  function isDescripcionValid() {
+    const descripcion = descripcionInput.value;
+    return isUniqueField('descripcion', descripcion);
+  }
+
+  function isDescripcionLengthValid() {
+    const descripcion = descripcionInput.value;
+    return descripcion.length <= 90;
+  }
+
+  function isUniqueField(fieldName, fieldValue) {
+    const elements = document.querySelectorAll(`[name=${fieldName}]`);
+    return [...elements].every(element => element.value === fieldValue);
+  }
+
+  function showErrors(errors) {
+    const inputElements = document.querySelectorAll('input');
+    inputElements.forEach(input => {
+      const feedback = input.nextElementSibling;
+      feedback.textContent = errors[input.name] || '';
+    });
+  }
+</script>
+
+</body>      
+</html>
+
